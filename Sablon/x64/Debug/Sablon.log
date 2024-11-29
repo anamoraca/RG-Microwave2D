@@ -1,0 +1,6 @@
+﻿  main.cpp
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.41.34120\include\filesystem(12): warning STL4038: The contents of <filesystem> are available only with C++17 or later.
+C:\Users\ASUS\Documents\4. GODINA\1. SEMESTAR\Računarska grafika\PROJEKAT\RG-Microwave2D\main.cpp(160,38): warning C4305: 'argument': truncation from 'double' to 'GLclampf'
+C:\Users\ASUS\Documents\4. GODINA\1. SEMESTAR\Računarska grafika\PROJEKAT\RG-Microwave2D\main.cpp(160,28): warning C4305: 'argument': truncation from 'double' to 'GLclampf'
+C:\Users\ASUS\Documents\4. GODINA\1. SEMESTAR\Računarska grafika\PROJEKAT\RG-Microwave2D\main.cpp(160,18): warning C4305: 'argument': truncation from 'double' to 'GLclampf'
+  Sablon.vcxproj -> C:\Users\ASUS\Documents\4. GODINA\1. SEMESTAR\Računarska grafika\PROJEKAT\RG-Microwave2D\x64\Debug\Sablon.exe
