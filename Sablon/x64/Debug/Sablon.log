@@ -1,6 +1,16 @@
 ﻿  main.cpp
 C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.41.34120\include\filesystem(12): warning STL4038: The contents of <filesystem> are available only with C++17 or later.
-C:\Users\ASUS\Documents\4. GODINA\1. SEMESTAR\Računarska grafika\PROJEKAT\RG-Microwave2D\main.cpp(160,38): warning C4305: 'argument': truncation from 'double' to 'GLclampf'
-C:\Users\ASUS\Documents\4. GODINA\1. SEMESTAR\Računarska grafika\PROJEKAT\RG-Microwave2D\main.cpp(160,28): warning C4305: 'argument': truncation from 'double' to 'GLclampf'
-C:\Users\ASUS\Documents\4. GODINA\1. SEMESTAR\Računarska grafika\PROJEKAT\RG-Microwave2D\main.cpp(160,18): warning C4305: 'argument': truncation from 'double' to 'GLclampf'
+C:\Users\ASUS\Documents\4. GODINA\1. SEMESTAR\Računarska grafika\PROJEKAT\RG-Microwave2D\main.cpp(107,9): warning C4305: 'initializing': truncation from 'double' to 'float'
+C:\Users\ASUS\Documents\4. GODINA\1. SEMESTAR\Računarska grafika\PROJEKAT\RG-Microwave2D\main.cpp(107,15): warning C4305: 'initializing': truncation from 'double' to 'float'
+C:\Users\ASUS\Documents\4. GODINA\1. SEMESTAR\Računarska grafika\PROJEKAT\RG-Microwave2D\main.cpp(108,9): warning C4305: 'initializing': truncation from 'double' to 'float'
+C:\Users\ASUS\Documents\4. GODINA\1. SEMESTAR\Računarska grafika\PROJEKAT\RG-Microwave2D\main.cpp(108,16): warning C4305: 'initializing': truncation from 'double' to 'float'
+C:\Users\ASUS\Documents\4. GODINA\1. SEMESTAR\Računarska grafika\PROJEKAT\RG-Microwave2D\main.cpp(109,8): warning C4305: 'initializing': truncation from 'double' to 'float'
+C:\Users\ASUS\Documents\4. GODINA\1. SEMESTAR\Računarska grafika\PROJEKAT\RG-Microwave2D\main.cpp(109,14): warning C4305: 'initializing': truncation from 'double' to 'float'
+C:\Users\ASUS\Documents\4. GODINA\1. SEMESTAR\Računarska grafika\PROJEKAT\RG-Microwave2D\main.cpp(110,8): warning C4305: 'initializing': truncation from 'double' to 'float'
+C:\Users\ASUS\Documents\4. GODINA\1. SEMESTAR\Računarska grafika\PROJEKAT\RG-Microwave2D\main.cpp(110,14): warning C4305: 'initializing': truncation from 'double' to 'float'
+C:\Users\ASUS\Documents\4. GODINA\1. SEMESTAR\Računarska grafika\PROJEKAT\RG-Microwave2D\main.cpp(122,17): warning C4305: 'initializing': truncation from 'double' to 'float'
+C:\Users\ASUS\Documents\4. GODINA\1. SEMESTAR\Računarska grafika\PROJEKAT\RG-Microwave2D\main.cpp(124,18): warning C4305: 'initializing': truncation from 'double' to 'float'
+C:\Users\ASUS\Documents\4. GODINA\1. SEMESTAR\Računarska grafika\PROJEKAT\RG-Microwave2D\main.cpp(219,38): warning C4305: 'argument': truncation from 'double' to 'GLclampf'
+C:\Users\ASUS\Documents\4. GODINA\1. SEMESTAR\Računarska grafika\PROJEKAT\RG-Microwave2D\main.cpp(219,28): warning C4305: 'argument': truncation from 'double' to 'GLclampf'
+C:\Users\ASUS\Documents\4. GODINA\1. SEMESTAR\Računarska grafika\PROJEKAT\RG-Microwave2D\main.cpp(219,18): warning C4305: 'argument': truncation from 'double' to 'GLclampf'
   Sablon.vcxproj -> C:\Users\ASUS\Documents\4. GODINA\1. SEMESTAR\Računarska grafika\PROJEKAT\RG-Microwave2D\x64\Debug\Sablon.exe

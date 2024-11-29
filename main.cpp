@@ -88,6 +88,57 @@ int main(void)
 
     };
 
+    float doorFrameVertices[] = {
+        -0.13f,  -0.67f,   0.0f, 0.0f, 0.0f,  // Donji desni ugao
+        -0.13f,   0.2f,    0.0f, 0.0f, 0.0f,  // Gornji desni ugao
+       -0.65f,  -0.67f,   0.0f, 0.0f, 0.0f, // Donji levi ugao
+       -0.65f,   0.2f,    0.0f, 0.0f, 0.0f   // Gornji levi ugao
+    };
+
+    float doorVertices[] = {
+      -0.18f,  -0.60f,   1.0f, 1.0f, 1.0f,   // Donji desni ugao
+      -0.18f,   0.13f, 1.0f, 1.0f, 1.0f,     // Gornji desni ugao
+      -0.60f,  -0.60f,  1.0f, 1.0f, 1.0f,    // Donji levi ugao
+      -0.60f,   0.13f,    1.0f, 1.0f, 1.0f   // Gornji levi ugao
+    };
+
+
+    float keyboardFrameVertices[] = {
+        0.12, -0.6,  0.2f, 0.2f, 0.2f,       //donji desni 
+        0.12,  0.13,    0.2f, 0.2f, 0.2f,    // gornji desni 
+       -0.1, -0.6,  0.2f, 0.2f, 0.2f,      //donji levi
+       -0.1, 0.13,    0.2f, 0.2f, 0.2f     //gornji levi 
+    };
+
+    float timerVertices[] = {
+        0.1f,  0.1f,  0.9f, 0.9f, 0.9f,  // Gornji desni ugao
+        0.1f,  -0.05f,   0.9f, 0.9f, 0.9f,  //Donji desni ugao
+       -0.08f,  0.1f,  0.9f, 0.9f, 0.9f,  // Gornji levi ugao
+       -0.08f,  -0.05f,   0.9f, 0.9f, 0.9f   // Donji levi ugao
+    };
+
+    float keyboardVertices[] = {
+        0.1f,  -0.35f,  0.7f, 0.7f, 0.7f,  // Donji desni ugao
+        0.1f,   -0.08, 0.7f, 0.7f, 0.7f,    // Gornji desni ugao
+       -0.08f,   -0.35f,  0.7f, 0.7f, 0.7f,    // Donji levi ugao
+       -0.08f,   -0.08, 0.7f, 0.7f, 0.7f,    // Gornji levi ugao
+    };
+
+    float startStopButtonVertices[] = {
+        0.1f,  -0.46f,   0.7f, 0.7f, 0.7f,  // Donji desni ugao
+        0.1f,  -0.37f,   0.7f, 0.7f, 0.7f,  // Gornji desni ugao
+       -0.08f,  -0.46f,   0.7f, 0.7f, 0.7f,  // Donji levi ugao
+       -0.08f,  -0.37f,   0.7f, 0.7f, 0.7f   // Gornji levi ugao
+    };
+
+    float restartButtonVertices[] = {
+         0.1f,  -0.57f,   0.7f, 0.7f, 0.7f,  // Donji desni ugao
+         0.1f,  -0.48f,   0.7f, 0.7f, 0.7f,  // Gornji desni ugao
+        -0.08f,  -0.57f,   0.7f, 0.7f, 0.7f,  // Donji levi ugao
+        -0.08f,  -0.48f,   0.7f, 0.7f, 0.7f   // Gornji levi ugao
+    };
+
+
 
     unsigned int uniIndices[] = {
         0, 1, 2,  // Prvi trougao
@@ -121,13 +172,21 @@ int main(void)
     glEnableVertexAttribArray(1);
 
 
-    unsigned int microwaveVAO, microwaveSideVAO, microwaveTopVAO;
+    unsigned int microwaveVAO, microwaveSideVAO, microwaveTopVAO,
+                 keyboardFrameVAO, timerVAO, keyboardVAO, startStopButtonVAO,
+                 restartButtonVAO, doorFrameVAO, doorVAO;
 
     microwaveVAO = initVAO(microwaveVertices,uniIndices,sizeof(microwaveVertices),sizeof(uniIndices), 5 * sizeof(float));
     microwaveSideVAO =initVAO(microwaveSideVertices, uniIndices,sizeof(microwaveSideVertices), sizeof(uniIndices), 5 * sizeof(float));
     microwaveTopVAO = initVAO(microwaveTopVertices, uniIndices, sizeof(microwaveTopVertices), sizeof(uniIndices), 5 * sizeof(float));
-
-
+    keyboardFrameVAO = initVAO(keyboardFrameVertices, uniIndices, sizeof(keyboardFrameVertices), sizeof(uniIndices), 5 * sizeof(float));
+    timerVAO = initVAO(timerVertices, uniIndices, sizeof(timerVertices), sizeof(uniIndices), 5 * sizeof(float));
+    keyboardVAO = initVAO(keyboardVertices, uniIndices, sizeof(keyboardVertices), sizeof(uniIndices), 5 * sizeof(float));
+    startStopButtonVAO = initVAO(startStopButtonVertices, uniIndices, sizeof(startStopButtonVertices), sizeof(uniIndices), 5 * sizeof(float));
+    restartButtonVAO =  initVAO(restartButtonVertices, uniIndices, sizeof(restartButtonVertices), sizeof(uniIndices), 5 * sizeof(float));
+    doorFrameVAO = initVAO(doorFrameVertices, uniIndices, sizeof(doorFrameVertices), sizeof(uniIndices), 5 * sizeof(float));
+    doorVAO = initVAO(doorVertices, uniIndices, sizeof(doorVertices), sizeof(uniIndices), 5 * sizeof(float));
+    
     unsigned int texture;
     glGenTextures(1, &texture);
     glBindTexture(GL_TEXTURE_2D, texture);
@@ -188,17 +247,34 @@ int main(void)
         glBindVertexArray(microwaveVAO);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
-        // microwave side
-        glUniform1i(glGetUniformLocation(basicShader, "useTexture"), 1);
         glBindVertexArray(microwaveSideVAO);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
-        // microwave top
-        glUniform1i(glGetUniformLocation(basicShader, "useTexture"), 1);
         glBindVertexArray(microwaveTopVAO);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
-     
+        glBindVertexArray(keyboardFrameVAO);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+        glBindVertexArray(timerVAO);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+        glBindVertexArray(keyboardVAO);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+
+        glBindVertexArray(startStopButtonVAO);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+        glBindVertexArray(restartButtonVAO);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+        glBindVertexArray(doorFrameVAO);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+        glBindVertexArray(doorVAO);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    
         glBindVertexArray(0);
         glUseProgram(0);
 
