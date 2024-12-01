@@ -33,11 +33,12 @@
     <None Include="basic.vert">
       <Filter>Source Files\Shader Files</Filter>
     </None>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="stb_image.h">
-      <Filter>Source Files\includes</Filter>
-    </ClInclude>
+    <None Include="text.frag">
+      <Filter>Source Files\Shader Files</Filter>
+    </None>
+    <None Include="text.vert">
+      <Filter>Source Files\Shader Files</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Textures\wood-texture.jpg">

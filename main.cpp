@@ -1,4 +1,4 @@
-#define _CRT_SECURE_NO_WARNINGS
+﻿#define _CRT_SECURE_NO_WARNINGS
 #define STB_IMAGE_IMPLEMENTATION
 
 
@@ -9,18 +9,37 @@
 #include <filesystem>
 #include <string>
 
+#include <ft2build.h>
+#include FT_FREETYPE_H
 #include <GL/glew.h>   
 #include <GLFW/glfw3.h>
 #include "stb_image.h"
+#include <map>
+#include <string>
+#include <iostream>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 unsigned int compileShader(GLenum type, const char* source);
 unsigned int createShader(const char* vsSource, const char* fsSource);
 unsigned int initVAO(float* vertices, unsigned int* indices, int vertexSize, int indicesSize, int strideV);
+//void initFreeType(FT_Library& ft, FT_Face& face);
+//void RenderText(const std::string& text, float x, float y, float scale, glm::vec3 color, unsigned int shaderProgram);
+
+struct Character {
+    unsigned int TextureID;  // ID teksture
+    glm::ivec2 Size;         // Velicina glifa
+    glm::ivec2 Bearing;      // Offset od osnovne linije
+    unsigned int Advance;    // Razmak do sledećeg glifa
+};
+
+std::map<char, Character> Characters;
+unsigned int VAO, VBO;
+
 
 int main(void)
 {
-
-
+    FT_Library ft;
     if (!glfwInit())
     {
         std::cout << "GLFW Biblioteka se nije ucitala! :(\n";
@@ -32,7 +51,7 @@ int main(void)
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     //GLFWmonitor* monitor = glfwGetPrimaryMonitor();                 //trenutni monitor
-    //const GLFWvidmode* mode = glfwGetVideoMode(monitor);            //informacije o rezoluciji i osve�avanju
+    //const GLFWvidmode* mode = glfwGetVideoMode(monitor);            //informacije o rezoluciji i osvežavanju
     GLFWwindow* window;
     unsigned int wWidth = 1280; //Podesiti u zavisnosti od rezolucije monitora
     unsigned int wHeight = 720;
@@ -112,23 +131,23 @@ int main(void)
 
     float timerVertices[] = {
         0.1f,  0.1f,  0.9f, 0.9f, 0.9f,  // Gornji desni ugao
-        0.1f,  -0.05f,   0.9f, 0.9f, 0.9f,  //Donji desni ugao
+        0.1f,  -0.03f,   0.9f, 0.9f, 0.9f,  //Donji desni ugao
        -0.08f,  0.1f,  0.9f, 0.9f, 0.9f,  // Gornji levi ugao
-       -0.08f,  -0.05f,   0.9f, 0.9f, 0.9f   // Donji levi ugao
+       -0.08f,  -0.03f,   0.9f, 0.9f, 0.9f   // Donji levi ugao
     };
 
     float keyboardVertices[] = {
-        0.1f,  -0.35f,  0.7f, 0.7f, 0.7f,  // Donji desni ugao
-        0.1f,   -0.08, 0.7f, 0.7f, 0.7f,    // Gornji desni ugao
-       -0.08f,   -0.35f,  0.7f, 0.7f, 0.7f,    // Donji levi ugao
-       -0.08f,   -0.08, 0.7f, 0.7f, 0.7f,    // Gornji levi ugao
+        0.1f,  -0.36f,  0.7f, 0.7f, 0.7f,  // Donji desni ugao
+        0.1f,   -0.06, 0.7f, 0.7f, 0.7f,    // Gornji desni ugao
+       -0.08f,   -0.36f,  0.7f, 0.7f, 0.7f,    // Donji levi ugao
+       -0.08f,   -0.06, 0.7f, 0.7f, 0.7f,    // Gornji levi ugao
     };
 
     float startStopButtonVertices[] = {
         0.1f,  -0.46f,   0.7f, 0.7f, 0.7f,  // Donji desni ugao
-        0.1f,  -0.37f,   0.7f, 0.7f, 0.7f,  // Gornji desni ugao
+        0.1f,  -0.38f,   0.7f, 0.7f, 0.7f,  // Gornji desni ugao
        -0.08f,  -0.46f,   0.7f, 0.7f, 0.7f,  // Donji levi ugao
-       -0.08f,  -0.37f,   0.7f, 0.7f, 0.7f   // Gornji levi ugao
+       -0.08f,  -0.38f,   0.7f, 0.7f, 0.7f   // Gornji levi ugao
     };
 
     float restartButtonVertices[] = {
@@ -138,12 +157,53 @@ int main(void)
         -0.08f,  -0.48f,   0.7f, 0.7f, 0.7f   // Gornji levi ugao
     };
 
-
-
     unsigned int uniIndices[] = {
         0, 1, 2,  // Prvi trougao
         2,3, 1   // Drugi trougao
     };
+
+    float buttonWidth = 0.04f;  // sirina dugmeta
+    float buttonHeight = 0.05f; // Visina dugmeta
+    float xOffset = -0.07f;     // Horizontalni pomak (od leve ivice tastature)
+    float yOffset = -0.13f;     // Vertikalni pomak (od gornje ivice tastature)
+
+    // Niz za dugmice 0-9
+    float numberButtonVertices[10][20];
+    for (int i = 0; i < 10; ++i) {
+        int row = i / 3; // Red u kojem se broj nalazi
+        int col = i % 3; // Kolona u kojoj je broj
+        if (i == 9) {    // Broj 0 ide u centar donjeg reda
+            row = 3;
+            col = 1;
+        }
+        float xStart = xOffset + col * (buttonWidth + 0.02f); // X koordinata
+        float yStart = yOffset - row * (buttonHeight + 0.02f); // Y koordinata
+
+        // Definisi pravougaonik za dugme
+        numberButtonVertices[i][0] = xStart + buttonWidth;  // Donji desni ugao
+        numberButtonVertices[i][1] = yStart;
+        numberButtonVertices[i][2] = 0.9f; // Boja (siva)
+        numberButtonVertices[i][3] = 0.9f;
+        numberButtonVertices[i][4] = 0.9f;
+
+        numberButtonVertices[i][5] = xStart + buttonWidth;  // Gornji desni ugao
+        numberButtonVertices[i][6] = yStart + buttonHeight;
+        numberButtonVertices[i][7] = 0.9f;
+        numberButtonVertices[i][8] = 0.9f;
+        numberButtonVertices[i][9] = 0.9f;
+
+        numberButtonVertices[i][10] = xStart;               // Donji levi ugao
+        numberButtonVertices[i][11] = yStart;
+        numberButtonVertices[i][12] = 0.9f;
+        numberButtonVertices[i][13] = 0.9f;
+        numberButtonVertices[i][14] = 0.9f;
+
+        numberButtonVertices[i][15] = xStart;               // Gornji levi ugao
+        numberButtonVertices[i][16] = yStart + buttonHeight;
+        numberButtonVertices[i][17] = 0.9f;
+        numberButtonVertices[i][18] = 0.9f;
+        numberButtonVertices[i][19] = 0.9f;
+    }
 
 
 
@@ -213,10 +273,15 @@ int main(void)
         std::cout << "Greska pri ucitavanju teksture!" << std::endl;
     }
 
-
     unsigned int basicShader = createShader("basic.vert", "basic.frag");
 
     glClearColor(0.960784, 0.960784, 0.862745, 1.0);
+
+
+    /*FT_Library ft;
+    FT_Face face;
+    initFreeType(ft, face);*/
+    int minutes = 2, seconds = 30;
 
     while (!glfwWindowShouldClose(window))
     {
@@ -274,7 +339,21 @@ int main(void)
 
         glBindVertexArray(doorVAO);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-    
+
+        //iscrtavanje same tastature i brojeva
+        for (int i = 0; i < 10; ++i) {
+            unsigned int buttonVAO = initVAO(numberButtonVertices[i], uniIndices, sizeof(numberButtonVertices[i]), sizeof(uniIndices), 5 * sizeof(float));
+            glBindVertexArray(buttonVAO);
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        }
+
+        // Iscrtavanje brojeva tastature
+      /*  for (int i = 0; i < 10; ++i) {
+            char numStr[2];
+            snprintf(numStr, sizeof(numStr), "%d", i);
+            RenderText(numStr, numberButtonVertices[i][10] + 0.02f, numberButtonVertices[i][11] + 0.02f, 0.5f, glm::vec3(0.8f, 0.8f, 0.8f), basicShader);
+        }*/
+
         glBindVertexArray(0);
         glUseProgram(0);
 
@@ -289,6 +368,20 @@ int main(void)
     glfwTerminate();
     return 0;
 }
+
+
+//FUNKCIJA ZA UPDATE TAJMERA
+
+void updateTimer(int& minutes, int& seconds) {
+    if (seconds > 0) {
+        seconds--;
+    }
+    else if (minutes > 0) {
+        minutes--;
+        seconds = 59;
+    }
+}
+
 
 unsigned int initVAO(float* vertices, unsigned int* indices,int vertexSize, int indicesSize, int strideV) {
     unsigned int VAO, VBO,EBO;
@@ -315,6 +408,111 @@ unsigned int initVAO(float* vertices, unsigned int* indices,int vertexSize, int 
 }
 
 
+
+
+//void initFreeType(FT_Library& ft, FT_Face& face) {
+//    if (FT_Init_FreeType(&ft)) {
+//        std::cout << "ERROR::FREETYPE: Could not init FreeType Library" << std::endl;
+//        exit(1);
+//    }
+//
+//    if (FT_New_Face(ft, "fonts/arial.ttf", 0, &face)) {
+//        std::cout << "ERROR::FREETYPE: Failed to load font" << std::endl;
+//        exit(1);
+//    }
+//
+//    FT_Set_Pixel_Sizes(face, 0, 48); // Postavi visinu fonta na 48 piksela
+//
+//    glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // Bez ogranicenja poravnanja bajta
+//
+//    for (unsigned char c = 0; c < 128; c++) {
+//        if (FT_Load_Char(face, c, FT_LOAD_RENDER)) {
+//            std::cout << "ERROR::FREETYTPE: Failed to load Glyph" << std::endl;
+//            continue;
+//        }
+//
+//        unsigned int texture;
+//        glGenTextures(1, &texture);
+//        glBindTexture(GL_TEXTURE_2D, texture);
+//        glTexImage2D(
+//            GL_TEXTURE_2D,
+//            0,
+//            GL_RED,
+//            face->glyph->bitmap.width,
+//            face->glyph->bitmap.rows,
+//            0,
+//            GL_RED,
+//            GL_UNSIGNED_BYTE,
+//            face->glyph->bitmap.buffer
+//        );
+//
+//        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+//        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+//        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+//        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+//
+//        Character character = {
+//            texture,
+//            glm::ivec2(face->glyph->bitmap.width, face->glyph->bitmap.rows),
+//            glm::ivec2(face->glyph->bitmap_left, face->glyph->bitmap_top),
+//            face->glyph->advance.x
+//        };
+//        Characters.insert(std::pair<char, Character>(c, character));
+//    }
+//
+//    glBindTexture(GL_TEXTURE_2D, 0);
+//
+//    FT_Done_Face(face);
+//    FT_Done_FreeType(ft);
+//
+//    glGenVertexArrays(1, &VAO);
+//    glGenBuffers(1, &VBO);
+//    glBindVertexArray(VAO);
+//    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+//    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 4, NULL, GL_DYNAMIC_DRAW);
+//    glEnableVertexAttribArray(0);
+//    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
+//}
+
+
+// FUNKCIJA ZA RENDEROVANJE TEKSTA
+
+//void RenderText(const std::string& text, float x, float y, float scale, glm::vec3 color, unsigned int shaderProgram) {
+//    glUseProgram(shaderProgram);
+//    glUniform3f(glGetUniformLocation(shaderProgram, "textColor"), color.x, color.y, color.z);
+//    glActiveTexture(GL_TEXTURE0);
+//    glBindVertexArray(VAO);
+//
+//    for (const char& c : text) {
+//        Character ch = Characters[c];
+//
+//        float xpos = x + ch.Bearing.x * scale;
+//        float ypos = y - (ch.Size.y - ch.Bearing.y) * scale;
+//
+//        float w = ch.Size.x * scale;
+//        float h = ch.Size.y * scale;
+//
+//        float vertices[6][4] = {
+//            { xpos,     ypos + h,   0.0f, 0.0f },
+//            { xpos,     ypos,       0.0f, 1.0f },
+//            { xpos + w, ypos,       1.0f, 1.0f },
+//
+//            { xpos,     ypos + h,   0.0f, 0.0f },
+//            { xpos + w, ypos,       1.0f, 1.0f },
+//            { xpos + w, ypos + h,   1.0f, 0.0f }
+//        };
+//
+//        glBindTexture(GL_TEXTURE_2D, ch.TextureID);
+//        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+//        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
+//        glBindBuffer(GL_ARRAY_BUFFER, 0);
+//        glDrawArrays(GL_TRIANGLES, 0, 6);
+//
+//        x += (ch.Advance >> 6) * scale;
+//    }
+//    glBindVertexArray(0);
+//    glBindTexture(GL_TEXTURE_2D, 0);
+//}
 
 
 
@@ -416,3 +614,5 @@ unsigned int createShader(const char* vsSource, const char* fsSource)
 
     return program;
 }
+
+
