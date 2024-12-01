@@ -155,6 +155,9 @@
   <ItemGroup>
     <Image Include="Textures\wood-texture.jpg" />
   </ItemGroup>
+  <ItemGroup>
+    <Font Include="..\..\..\..\..\..\Downloads\ARIAL.TTF" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
     <Import Project="packages\glfw.3.3.8\build\native\glfw.targets" Condition="Exists('packages\glfw.3.3.8\build\native\glfw.targets')" />

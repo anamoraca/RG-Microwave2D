@@ -45,4 +45,7 @@
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>
+  <ItemGroup>
+    <Font Include="..\..\..\..\..\..\Downloads\ARIAL.TTF" />
+  </ItemGroup>
 </Project>
