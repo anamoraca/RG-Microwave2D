@@ -30,6 +30,12 @@
     std::string curentTime = "00:00";
     float numberButtonVertices[10][20];    // Sadrži koordinate dugmića tastature
     int inputCount = 0;                    //brojac klk je puta kliknuo
+
+    bool isLampOn = true;              
+    bool isPulsing = false;                
+    float lampPulse = 0.0f;                // vrednost za pulsiranje (0.0 - 1.0)
+    bool increasing = false;
+
         
     struct Character { 
         unsigned int TextureID;           // ID teksture
@@ -48,8 +54,12 @@
     void loadFont(const char* fontPath);
     void RenderText(unsigned int shader, const std::string& text, float x, float y, float scale, glm::vec3 color, unsigned int& VAO, unsigned int& VBO);
    
-    void handleKeyPress(int number);
     int detectButtonClick(double xpos, double ypos);
+
+    void handleKeyPress(int number);
+    void handleButtonPress(int buttonNumber);
+
+    void updateLamp();
 
     void updateTimer();
     void resetTimer();
@@ -72,8 +82,12 @@
 
             // Provera koji je taster kliknut
             int buttonPressed = detectButtonClick(xpos, ypos);
-            if (buttonPressed != -1) {
+
+            if (buttonPressed>-1 && buttonPressed<10) {
                 handleKeyPress(buttonPressed);
+            }
+            else if(buttonPressed >9 && buttonPressed < 13){
+                handleButtonPress(buttonPressed);
             }
             else {
                 std::cout << "No button pressed!" << std::endl;
@@ -121,6 +135,8 @@
             std::cout << "GLEW nije mogao da se ucita! :'(\n";
             return 3;
         }
+
+   
 
         float counterTopVertices[] = {
             // X       Y       Texture X   Texture Y
@@ -182,6 +198,20 @@
         };
 
 
+        float lampVertices[]{
+            0.12, 0.14,  0.0f, 0.0f, 0.0f,       //donji desni 
+            0.12,  0.185,  0.0f, 0.0f, 0.0f,    // gornji desni 
+            -0.1, 0.14,   0.0f, 0.0f, 0.0f,     //donji levi
+           -0.1,  0.185,    0.0f, 0.0f, 0.0f     //gornji levi
+        };
+
+
+        float lampLineVertices[]{
+            0.11,  0.15,     1.0f, 1.0f, 1.0f,       //donji desni 
+            0.11,  0.175,  1.0f, 1.0f, 1.0f,    // gornji desni 
+           -0.09, 0.15,    1.0f, 1.0f, 1.0f,      //donji levi
+           -0.09, 0.175,     1.0f, 1.0f, 1.0f     //gornji levi
+        };
 
         float keyboardFrameVertices[] = {
             0.12, -0.6,  0.2f, 0.2f, 0.2f,       //donji desni 
@@ -267,8 +297,8 @@
             numberButtonVertices[i][19] = 0.9f;
 
             std::cout << "Button " << i << " coordinates: "
-                << "xStart=" << xStart << ", xEnd=" << (xStart + buttonWidth)
-                << ", yStart=" << yStart << ", yEnd=" << (yStart + buttonHeight) << std::endl;
+                      << "xStart=" << xStart << ", xEnd=" << (xStart + buttonWidth)
+                      << ", yStart=" << yStart << ", yEnd=" << (yStart + buttonHeight) << std::endl;
 
         }
 
@@ -298,7 +328,8 @@
 
         unsigned int microwaveVAO, microwaveSideVAO, microwaveTopVAO,
                      keyboardFrameVAO, timerVAO, keyboardVAO, startStopButtonVAO,
-                     restartButtonVAO, doorFrameVAO, doorVAO,pictureVAO, microwaveInsideVAO;
+                     restartButtonVAO, doorFrameVAO, doorVAO,pictureVAO, microwaveInsideVAO,
+                     lampVAO, lampLineVAO;
 
         microwaveVAO = initVAO(microwaveVertices,uniIndices,sizeof(microwaveVertices),sizeof(uniIndices), 5 * sizeof(float));
         microwaveSideVAO =initVAO(microwaveSideVertices, uniIndices,sizeof(microwaveSideVertices), sizeof(uniIndices), 5 * sizeof(float));
@@ -312,10 +343,10 @@
         doorVAO = initVAO(doorVertices, uniIndices, sizeof(doorVertices), sizeof(uniIndices), 5 * sizeof(float));
         pictureVAO= initVAO(pictureVertices, uniIndices, sizeof(pictureVertices), sizeof(uniIndices), 5 * sizeof(float));
         microwaveInsideVAO = initVAO(microwaveInsideVertices, uniIndices, sizeof(microwaveInsideVertices), sizeof(uniIndices), 5 * sizeof(float));
+        lampVAO = initVAO(lampVertices, uniIndices, sizeof(lampVertices), sizeof(uniIndices), 5 * sizeof(float));
+        lampLineVAO = initVAO(lampLineVertices, uniIndices, sizeof(lampLineVertices), sizeof(uniIndices), 5 * sizeof(float));
 
 
-
-        
         // TExt
 
         glEnable(GL_BLEND);
@@ -368,6 +399,7 @@
 
         unsigned int basicShader = createShader("basic.vert", "basic.frag");
         unsigned int textShader = createShader("text.vert", "text.frag");
+        unsigned int lampShader = createShader("lamp.vert", "lamp.frag");
 
         glm::mat4 projection = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f);
         glUseProgram(textShader);
@@ -387,6 +419,9 @@
             if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
                 glfwSetWindowShouldClose(window, GL_TRUE);
             }
+
+            updateTimer();
+            updateLamp();
 
             glUseProgram(basicShader);
 
@@ -412,17 +447,27 @@
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
             glBindVertexArray(microwaveTopVAO);
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+            glDrawElements(GL_TRIANGLES, 6, 0x1405, 0);
 
             glBindVertexArray(keyboardFrameVAO);
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
+            glBindVertexArray(lampVAO);
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+            glUseProgram(lampShader); // Aktiviraj shader za lampicu
+            glUniform3f(glGetUniformLocation(lampShader, "lampColor"), 1.0f, 1.0f, 1.0f); // Crvena boja
+            glUniform1f(glGetUniformLocation(lampShader, "pulseFactor"), lampPulse); // Pulsiranje
+
+            glBindVertexArray(lampLineVAO);
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+            glUseProgram(basicShader);  
             glBindVertexArray(timerVAO);
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
             glBindVertexArray(keyboardVAO);
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
 
             glBindVertexArray(startStopButtonVAO);
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
@@ -470,7 +515,9 @@
             glEnable(GL_BLEND);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             RenderText(textShader, "Ana Moraca RA 1/2021", 0.3,0.4, 0.00045, glm::vec3(0.0f, 0.0f, 0.0f), textVAO, textVBO);
-    
+            RenderText(textShader, "START  STOP", -0.074, -0.43, 0.00057, glm::vec3(0.0f, 0.0f, 0.0f), textVAO, textVBO);
+            RenderText(textShader, "RESTART", -0.062, -0.53, 0.0006, glm::vec3(0.0f, 0.0f, 0.0f), textVAO, textVBO);
+
         
 
             glBindVertexArray(0);
@@ -492,8 +539,6 @@
     int detectButtonClick(double xpos, double ypos) {
         // Koordinate za dugmad od 0 do 9
 
-        std::cout << "USLOOOOOOOOOO UU PETLJUU AAAAAAAAAAAAAAAAA!" << std::endl;
-
         std::cout << "Mouse coordinates (normalized): (" << xpos << ", " << ypos << ")" << std::endl;
 
         struct ButtonBounds {
@@ -510,11 +555,16 @@
             {-0.07f, -0.03f, -0.27f, -0.22f}, // Button 6
             {-0.01f,  0.03f, -0.27f, -0.22f}, // Button 7
             { 0.05f,  0.09f, -0.27f, -0.22f}, // Button 8
-            {-0.01f,  0.03f, -0.34f, -0.29f}  // Button 9
+            {-0.01f,  0.03f, -0.34f, -0.29f},  // Button 9
+
+            { -0.08f, 0.01f, -0.46f, -0.38f },    // START       
+            { 0.01f,  0.1f, -0.46f ,-0.38f },    // RESTART
+            { -0.08f, 0.1f ,-0.57f ,- 0.48f, }     // RESTART
+
         };
 
         // Iteracija kroz dugmad i provera da li klik odgovara nekom dugmetu
-        for (int i = 0; i < 10; ++i) {
+        for (int i = 0; i < 13; ++i) {
             if (xpos >= buttons[i].xStart && xpos <= buttons[i].xEnd &&
                 ypos >= buttons[i].yStart && ypos <= buttons[i].yEnd) {
                 return i; // Vraća broj dugmeta
@@ -523,6 +573,8 @@
 
         return -1; // Ako klik ne pripada nijednom dugmetu
     }
+
+    
 
 
     void handleKeyPress(int number) {
@@ -560,12 +612,55 @@
     }
 
 
-    // Funkcija za ažuriranje tajmera
-    void updateTimer() {
-      
+
+    void handleButtonPress(int buttonNumber) {
+        if (buttonNumber == 10) {  // Start
+            startTimer();
+        }
+        else if (buttonNumber == 11) {  // Stop
+            stopTimer();
+            std::cout << "Microwave stopped." << std::endl;
+        }
+        else if (buttonNumber == 12) {  // Restart
+            resetTimer();
+            std::cout << "Microwave timer reset." << std::endl;
+        }
     }
 
-    // Funkcija za resetovanje tajmera
+
+
+    void updateTimer() {
+        static double lastUpdateTime = glfwGetTime();
+        if (isRunning) {
+            double currentTime = glfwGetTime();
+            if (currentTime - lastUpdateTime >= 1.0) {  // Proveri da li je prošla 1 sekunda
+                lastUpdateTime = currentTime;
+
+                if (seconds > 0) {
+                    seconds--;
+                }
+                else if (minutes > 0) {
+                    minutes--;
+                    seconds = 59;
+                }
+                else {
+                    stopTimer();  // Zaustavi mikrotalasnu ako je vreme isteklo
+                    isLampOn = true;      // Uključi lampicu kada mikrotalasna završi
+                    isPulsing = false;   // Prekini pulsiranje
+
+                    std::cout << "Microwave finished!" << std::endl;
+                }
+
+                // Ažuriraj prikaz vremena
+                char buffer[6];
+                snprintf(buffer, sizeof(buffer), "%02d:%02d", minutes, seconds);
+                curentTime = buffer;
+
+                updateLamp();
+            }
+        }
+    }
+
     void resetTimer() {
         isRunning = false;
         minutes = 0;
@@ -573,22 +668,33 @@
         curentTime = "00:00";
     }
 
-    // Funkcija za startovanje tajmera
     void startTimer() {
         if (minutes > 0 || seconds > 0) {
-            isRunning = true;
+            isRunning = true;   
+            isPulsing = true;           // Lampica počinje da pulsira
+            isLampOn = true ;          // Lampica nije stalno uključena
         }
     }
 
-    // Funkcija za zaustavljanje tajmera
     void stopTimer() {
         isRunning = false;
+        isPulsing = false;          // Prekini pulsiranje
+        isLampOn = false;           // Isključi lampicu
     }
 
+   
 
-
-
-
+    void updateLamp() {
+        if (isRunning) {
+            double currentTime = glfwGetTime();
+            lampPulse = 0.5f + 0.5f * sin(currentTime * 5.14159);  // Sinusni puls (0.0 do 1.0)
+            isLampOn = true;  // Lampica svetli
+        }
+        else {
+            lampPulse = 0.0f;  // Lampica ugašena
+            isLampOn = false;  // Ne svetli
+        }
+    }
 
 
 
