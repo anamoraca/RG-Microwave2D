@@ -36,6 +36,18 @@
     float lampPulse = 0.0f;                // vrednost za pulsiranje (0.0 - 1.0)
     bool increasing = false;
 
+    bool isBroken = false;               
+    float sceneBrightness = 1.0f;         // Osvetljenost scene (0.0 - tamno, 1.0 - svetlo)
+    bool isTextBlinking = false;          // Da li tekst treperi
+    double lastBlinkTime = 0.0;           // Vreme poslednjeg treptaja
+
+    glm::vec2 smokeStart = glm::vec2(0.25f, 0.2f); // Gornji desni ugao mikrotalasne
+    glm::vec2 smokeCenter = smokeStart;            // Trenutna pozicija dima
+    glm::vec2 smokeScale = glm::vec2(0.3f, 0.6f);  // Skala elipse
+    float maxOpacity = 0.5f;                       // Maksimalna providnost
+    float dimTime = 0.0f;                          // Vremenska varijabla za animaciju
+    bool isSmokeVisible = false;                    // Da li se dim prikazuje
+
         
     struct Character { 
         unsigned int TextureID;           // ID teksture
@@ -66,6 +78,10 @@
     void startTimer();
     void stopTimer();
 
+    void repairMicrowave();
+    void updateBrokenState();
+
+
     
     // Funkcija za detekciju miša
     void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
@@ -94,6 +110,23 @@
             }
         }
     }
+
+    void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+        if (action == GLFW_PRESS) {
+            if (key == GLFW_KEY_X) {  // Taster X izaziva kvar
+                isBroken = true;
+                isRunning = false;
+                isLampOn = false;
+                isPulsing = false;
+                std::cout << "Microwave broken!" << std::endl;
+            }
+            if (key == GLFW_KEY_R) {  // Taster R vrši servisiranje
+                repairMicrowave();
+                std::cout << "Microwave repaired!" << std::endl;
+            }
+        }
+    }
+
 
 
     int main(void)
@@ -147,10 +180,10 @@
         };
 
         float pictureVertices[] = {
-         0.25f,  0.3f,   0.6f, 0.6f, 0.6f,  // Donji desni ugao
-         0.25f,   0.5f,    0.6f, 0.6f, 0.6f,  // Gornji desni ugao
-         0.55f,  0.3f,   0.6f, 0.6f, 0.6f,  // Donji levi ugao
-         0.55f,   0.5f,    0.6f, 0.6f, 0.6f   // Gornji levi ugao
+         0.8f,  0.7f,   0.6f, 0.6f, 0.6f,  // Donji desni ugao
+         0.8f,   0.9f,    0.6f, 0.6f, 0.6f,  // Gornji desni ugao
+         0.5f,  0.7f,   0.6f, 0.6f, 0.6f,  // Donji levi ugao
+         0.5f,   0.9f,    0.6f, 0.6f, 0.6f   // Gornji levi ugao
         };
 
         float microwaveVertices[] = {
@@ -248,15 +281,23 @@
             -0.08f,  -0.48f,   0.7f, 0.7f, 0.7f   // Gornji levi ugao
         };
 
-        unsigned int uniIndices[] = {
-            0, 1, 2,  // Prvi trougao
-            2,3, 1   // Drugi trougao
+        float smokeVertices[] = {
+          -1.0f, -1.0f, 0.1f, 0.1f, 0.1f,  // Donji levi ugao
+          -1.0f,  1.0f, 0.2f, 0.2f, 0.2f,  // Gornji levi ugao
+           1.0f, -1.0f, 0.0f, 0.0f, 0.0f,  // Donji desni ugao
+           1.0f,  1.0f, 0.8f, 0.8f, 0.8f   // Gornji desni ugao
         };
 
-        float buttonWidth = 0.04f;  // sirina dugmeta
-        float buttonHeight = 0.05f; // Visina dugmeta
-        float xOffset = -0.07f;     // Horizontalni pomak (od leve ivice tastature)
-        float yOffset = -0.13f;     // Vertikalni pomak (od gornje ivice tastature)
+
+        unsigned int uniIndices[] = {
+            0, 1, 2,                        // Prvi trougao
+            2,3, 1                          // Drugi trougao
+        };
+
+        float buttonWidth = 0.04f;          // sirina dugmeta
+        float buttonHeight = 0.05f;         // Visina dugmeta
+        float xOffset = -0.07f;             // Horizontalni pomak (od leve ivice tastature)
+        float yOffset = -0.13f;             // Vertikalni pomak (od gornje ivice tastature)
 
         // Niz za dugmice 0-9
         float numberButtonVertices[10][20];
@@ -329,7 +370,7 @@
         unsigned int microwaveVAO, microwaveSideVAO, microwaveTopVAO,
                      keyboardFrameVAO, timerVAO, keyboardVAO, startStopButtonVAO,
                      restartButtonVAO, doorFrameVAO, doorVAO,pictureVAO, microwaveInsideVAO,
-                     lampVAO, lampLineVAO;
+                     lampVAO, lampLineVAO,smokeVAO;
 
         microwaveVAO = initVAO(microwaveVertices,uniIndices,sizeof(microwaveVertices),sizeof(uniIndices), 5 * sizeof(float));
         microwaveSideVAO =initVAO(microwaveSideVertices, uniIndices,sizeof(microwaveSideVertices), sizeof(uniIndices), 5 * sizeof(float));
@@ -345,7 +386,7 @@
         microwaveInsideVAO = initVAO(microwaveInsideVertices, uniIndices, sizeof(microwaveInsideVertices), sizeof(uniIndices), 5 * sizeof(float));
         lampVAO = initVAO(lampVertices, uniIndices, sizeof(lampVertices), sizeof(uniIndices), 5 * sizeof(float));
         lampLineVAO = initVAO(lampLineVertices, uniIndices, sizeof(lampLineVertices), sizeof(uniIndices), 5 * sizeof(float));
-
+        smokeVAO = initVAO(smokeVertices, uniIndices, sizeof(smokeVertices), sizeof(uniIndices), 5 * sizeof(float));
 
         // TExt
 
@@ -367,6 +408,9 @@
 
             // Inicijalizacija miša
             glfwSetMouseButtonCallback(window, mouse_button_callback);
+
+            glfwSetKeyCallback(window, key_callback);
+
 
 
     // TEXTURE 
@@ -400,6 +444,7 @@
         unsigned int basicShader = createShader("basic.vert", "basic.frag");
         unsigned int textShader = createShader("text.vert", "text.frag");
         unsigned int lampShader = createShader("lamp.vert", "lamp.frag");
+        unsigned int smokeShader = createShader("smoke.vert", "smoke.frag");
 
         glm::mat4 projection = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f);
         glUseProgram(textShader);
@@ -420,10 +465,18 @@
                 glfwSetWindowShouldClose(window, GL_TRUE);
             }
 
-            updateTimer();
-            updateLamp();
+            if (isBroken) {
+                updateBrokenState();
+            }
+            else {
+                updateTimer();
+                updateLamp();
+            }
 
             glUseProgram(basicShader);
+
+            // Postavi uniform vrednosti za zatamnjenje
+            glUniform1f(glGetUniformLocation(basicShader, "brightness"), sceneBrightness); // Globalna osvetljenost
 
             // Use ourTexture uniform for texture binding
             glActiveTexture(GL_TEXTURE0); // Activate texture unit 0
@@ -514,10 +567,28 @@
             glBindVertexArray(textVAO);
             glEnable(GL_BLEND);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-            RenderText(textShader, "Ana Moraca RA 1/2021", 0.3,0.4, 0.00045, glm::vec3(0.0f, 0.0f, 0.0f), textVAO, textVBO);
+            RenderText(textShader, "Ana Moraca RA 1/2021", 0.65,0.8, 0.00045, glm::vec3(0.0f, 0.0f, 0.0f), textVAO, textVBO);
             RenderText(textShader, "START  STOP", -0.074, -0.43, 0.00057, glm::vec3(0.0f, 0.0f, 0.0f), textVAO, textVBO);
             RenderText(textShader, "RESTART", -0.062, -0.53, 0.0006, glm::vec3(0.0f, 0.0f, 0.0f), textVAO, textVBO);
 
+            // Ažuriranje uniform promenljivih za dim
+            if (isSmokeVisible) {
+                glUseProgram(smokeShader);
+                glUniform2f(glGetUniformLocation(smokeShader, "center"), smokeCenter.x, smokeCenter.y); // Centar dima
+                glUniform2f(glGetUniformLocation(smokeShader, "scale"), smokeScale.x, smokeScale.y);   // Skala elipse
+                glUniform1f(glGetUniformLocation(smokeShader, "time"), dimTime);                      // Animacija
+                glUniform1f(glGetUniformLocation(smokeShader, "opacity"), maxOpacity);                // Providnost
+
+                glBindVertexArray(smokeVAO);
+                glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+            }
+
+
+
+          
+
+            glBindVertexArray(smokeVAO);
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
         
 
             glBindVertexArray(0);
@@ -574,9 +645,6 @@
         return -1; // Ako klik ne pripada nijednom dugmetu
     }
 
-    
-
-
     void handleKeyPress(int number) {
         std::cout << "Key pressed: " << number << std::endl;
 
@@ -611,8 +679,6 @@
         inputCount++;
     }
 
-
-
     void handleButtonPress(int buttonNumber) {
         if (buttonNumber == 10) {  // Start
             startTimer();
@@ -626,8 +692,6 @@
             std::cout << "Microwave timer reset." << std::endl;
         }
     }
-
-
 
     void updateTimer() {
         static double lastUpdateTime = glfwGetTime();
@@ -644,9 +708,9 @@
                     seconds = 59;
                 }
                 else {
-                    stopTimer();  // Zaustavi mikrotalasnu ako je vreme isteklo
-                    isLampOn = true;      // Uključi lampicu kada mikrotalasna završi
-                    isPulsing = false;   // Prekini pulsiranje
+                    stopTimer(); 
+                    isLampOn = true;      
+                    isPulsing = false;   
 
                     std::cout << "Microwave finished!" << std::endl;
                 }
@@ -682,8 +746,6 @@
         isLampOn = false;           // Isključi lampicu
     }
 
-   
-
     void updateLamp() {
         if (isRunning) {
             double currentTime = glfwGetTime();
@@ -695,6 +757,57 @@
             isLampOn = false;  // Ne svetli
         }
     }
+
+
+    void repairMicrowave() {
+        isBroken = false;
+        isRunning = false;
+        isLampOn = false;
+        isPulsing = false;
+        lampPulse = 1.0f; // Resetovanje pulsa
+        minutes = 0;
+        seconds = 0;
+        curentTime = "00:00";
+        sceneBrightness = 1.0f;         // Reset osvetljenja na početnu vrednost
+        smokeCenter = smokeStart;        // Resetujte poziciju dima
+        isSmokeVisible = false;         // Dim postaje nevidljiv
+        std::cout << "Microwave has been repaired!" << std::endl;
+    }
+
+
+    void updateBrokenState() {
+        if (isBroken) {
+          
+            isSmokeVisible = true;
+
+            if (sceneBrightness > 0.0f) {
+                sceneBrightness -= 0.01f; // Brzina smanjenja
+            }
+
+            smokeCenter.y += 0.005f; // Brzina podizanja dima
+
+            // Kada dim izađe iz gornje granice, resetuj ga na početnu poziciju
+            if (smokeCenter.y > 1.2f) {
+                smokeCenter = smokeStart; // Vraćanje na početnu poziciju
+            }
+
+            dimTime += 0.01f; // Animacija u vremenu
+
+            // Treperenje "ERROR"
+            double currentTime = glfwGetTime();
+            if (currentTime - lastBlinkTime > 0.5) {
+                isTextBlinking = !isTextBlinking;
+                lastBlinkTime = currentTime;
+            }
+
+            curentTime = isTextBlinking ? "ERROR" : "";
+        }
+        else {
+            // Ako nije pokvaren, oblak dima ne treba crtati
+            smokeCenter = smokeStart; // Reset dima
+        }
+    }
+
 
 
 

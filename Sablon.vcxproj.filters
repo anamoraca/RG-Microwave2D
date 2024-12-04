@@ -45,6 +45,10 @@
     <None Include="lamp.vert">
       <Filter>Source Files\Shader Files</Filter>
     </None>
+    <None Include="smoke.vert">
+      <Filter>Source Files\Shader Files</Filter>
+    </None>
+    <None Include="smoke.frag" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="Textures\wood-texture.jpg">
