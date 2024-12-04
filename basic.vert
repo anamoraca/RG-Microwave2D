@@ -8,9 +8,17 @@ out vec3 Color;                              // boja za fragment s
 
 uniform int useTexture;                    // da li koristimo boje ili texturu
 
-void main() {
-    gl_Position = vec4(aPosition, 0.0, 1.0);     // Pozicija verteksa u prostoru
+uniform mat4 model;                          // Model matrica za ostale objekte
+uniform mat4 doorModel;                      // Model matrica za vrata
+uniform int isDoor;                          // Da li su verteksi vrata
 
+void main() {
+
+  if (isDoor == 1) {
+        gl_Position = doorModel * vec4(aPosition, 0.0, 1.0); // Transformacija samo za vrata
+    } else {
+        gl_Position = model * vec4(aPosition, 0.0, 1.0);     // Transformacija za ostale objekte
+    }
   if (useTexture == 0)
     {
         TexCoord = aTexturePos;
