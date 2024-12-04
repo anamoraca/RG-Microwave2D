@@ -49,6 +49,8 @@
       <Filter>Source Files\Shader Files</Filter>
     </None>
     <None Include="smoke.frag" />
+    <None Include="light.vert" />
+    <None Include="light.frag" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="Textures\wood-texture.jpg">

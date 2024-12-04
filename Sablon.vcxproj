@@ -150,6 +150,8 @@
     <None Include="basic.vert" />
     <None Include="lamp.frag" />
     <None Include="lamp.vert" />
+    <None Include="light.frag" />
+    <None Include="light.vert" />
     <None Include="packages.config" />
     <None Include="smoke.frag" />
     <None Include="smoke.vert" />

@@ -265,6 +265,14 @@
         -0.42f,  0.13f, 1.0f, 1.0f, 0.5f   // Gornji levi ugao
         };
 
+        float foodLamplightVertices[] = {
+       -0.18f,  -0.60f, 1.0f, 1.0f, 0.6f,  // Donji desni ugao
+       -0.35f,  0.13f, 1.0f, 1.0f, 0.6f, // Gornji desni ugao
+      -0.60f,  -0.60f,   0.5f, 0.5f, 0.3f,  // Donji levi ugao
+       -0.42f,  0.13f,  0.5f, 0.5f, 0.3f,   // Gornji levi ugao
+        };
+
+
         float lampVertices[]{
             0.12, 0.14,  0.0f, 0.0f, 0.0f,       //donji desni 
             0.12,  0.185,  0.0f, 0.0f, 0.0f,    // gornji desni 
@@ -421,7 +429,7 @@
         unsigned int microwaveVAO, microwaveSideVAO, microwaveTopVAO,
                      keyboardFrameVAO, timerVAO, keyboardVAO,buttonVAO, startStopButtonVAO,
                      restartButtonVAO, doorFrameVAO, doorGlassVAO,pictureVAO, microwaveInsideVAO,
-                     lampVAO, lampLineVAO,smokeVAO, foodLampVAO;
+                     lampVAO, lampLineVAO,smokeVAO, foodLampVAO, foodLampLightVAO;
 
         microwaveVAO = initVAO(microwaveVertices,uniIndices,sizeof(microwaveVertices),sizeof(uniIndices), 5 * sizeof(float));
         microwaveSideVAO =initVAO(microwaveSideVertices, uniIndices,sizeof(microwaveSideVertices), sizeof(uniIndices), 5 * sizeof(float));
@@ -439,7 +447,10 @@
         lampLineVAO = initVAO(lampLineVertices, uniIndices, sizeof(lampLineVertices), sizeof(uniIndices), 5 * sizeof(float));
         smokeVAO = initVAO(smokeVertices, uniIndices, sizeof(smokeVertices), sizeof(uniIndices), 5 * sizeof(float));
         foodLampVAO = initVAO(foodLampVertices, uniIndices, sizeof(foodLampVertices), sizeof(uniIndices), 5 * sizeof(float));
-     // TEXT
+        foodLampLightVAO = initVAO(foodLamplightVertices, uniIndices, sizeof(foodLamplightVertices), sizeof(uniIndices), 5 * sizeof(float));
+
+        
+        // TEXT
 
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -493,6 +504,8 @@
         unsigned int textShader = createShader("text.vert", "text.frag");
         unsigned int lampShader = createShader("lamp.vert", "lamp.frag");
         unsigned int smokeShader = createShader("smoke.vert", "smoke.frag");
+        unsigned int lightShader = createShader("light.vert", "light.frag");
+
 
         glm::mat4 projection = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f);
         glUseProgram(textShader);
@@ -584,6 +597,7 @@
 
             glUniform1i(glGetUniformLocation(lampShader, "isFoodLamp"), 0);  
 
+
             glUniform3f(glGetUniformLocation(lampShader, "lampColor"), 1.0f, 1.0f, 1.0f); // Crvena boja
             glUniform1f(glGetUniformLocation(lampShader, "pulseFactor"), lampPulse); // Pulsiranje
 
@@ -594,12 +608,24 @@
             glm::vec3 lightYellow = glm::vec3(1.0f, 1.0f, 0.6f);
             float brightness1 = isRunning ? (0.5f + 0.5f * sin(glfwGetTime() * 2.0f)) : 0.0f;
 
+
             glUniform3f(glGetUniformLocation(lampShader, "lampColor"), lightYellow.x, lightYellow.y, lightYellow.z);
             glUniform1f(glGetUniformLocation(lampShader, "brightness"), brightness1);
 
             glBindVertexArray(foodLampVAO);
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
             glBindVertexArray(0);
+
+            glUseProgram(lightShader);
+
+            float currentOpacity = !isRunning ? 0.0f : 0.5f;  // Ako je pokvarena, providnost je 0.0
+            // Postavi uniform promenljive za pulsiranje
+            glUniform1f(glGetUniformLocation(lightShader, "brightness"), lampPulse);
+            glUniform1f(glGetUniformLocation(lightShader, "opacity"), currentOpacity);
+
+            // Iscrtavanje svetlosnog trougla
+            glBindVertexArray(foodLampLightVAO);
+            glDrawArrays(GL_TRIANGLES, 0, 3);
 
             glUseProgram(basicShader);  
             glBindVertexArray(timerVAO);
@@ -661,8 +687,13 @@
             // Iscrtavanje teksta tajmera
             glUseProgram(textShader);       
             glBindVertexArray(textVAO);
-            RenderText(textShader, curentTime,-0.08, 0.02, 0.0015, glm::vec3(0.0f, 0.0f, 0.0f), textVAO, textVBO);
+            if (isBroken) {
+              RenderText(textShader, curentTime, -0.07, 0.02, 0.0009, glm::vec3(0.0f, 0.0f, 0.0f), textVAO, textVBO);
 
+            }
+            else {
+                RenderText(textShader, curentTime, -0.08, 0.02, 0.0015, glm::vec3(0.0f, 0.0f, 0.0f), textVAO, textVBO);
+            }
 
             //iscrtavanje same tastature 
             for (int i = 0; i < 10; ++i) {
