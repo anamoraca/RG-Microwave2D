@@ -19,11 +19,10 @@ void main() {
     } else {
         gl_Position = model * vec4(aPosition, 0.0, 1.0);     // Transformacija za ostale objekte
     }
-  if (useTexture == 0)
+  if (useTexture == 0 || useTexture ==1)
     {
         TexCoord = aTexturePos;
-    }
-    else
+    }else
     {
         TexCoord = vec2(0.0, 0.0); // Prazne koordinate kada ne koristimo teksturu
     }

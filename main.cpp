@@ -32,6 +32,7 @@
     bool isLampOn = true;              
     bool isPulsing = false;                
     float lampPulse = 0.0f;                // vrednost za pulsiranje (0.0 - 1.0)
+    float lampFoodPulse = 0.0f;
     bool increasing = false;
 
     bool isBroken = false;               
@@ -44,7 +45,11 @@
     glm::vec2 smokeScale = glm::vec2(0.3f, 0.6f);  // Skala elipse
     float maxOpacity = 0.5f;                       // Maksimalna providnost
     float dimTime = 0.0f;                          // Vremenska varijabla za animaciju
-    bool isSmokeVisible = false;                    
+    bool isSmokeVisible = false;     
+
+    float doorTransparency = 0.5f;  // Početna vrednost: neprozirno
+    float globalBrightness = 1.0f;  // Početna vrednost osvetljenja: 100% (potpuno svetlo)
+
 
     bool isDoorOpen = false;
         
@@ -113,9 +118,19 @@
                 isLampOn = false;
                 isPulsing = false;
                 std::cout << "Microwave broken!" << std::endl;
+
+                globalBrightness -= 0.4f;  // Smanji osvetljenje za 10%
+                if (globalBrightness < 0.4f) globalBrightness = 0.4f; // Minimalno osvetljenje 10%
+                std::cout << "Global brightness: " << globalBrightness << std::endl;
+
             }
             if (key == GLFW_KEY_R) {  // T servisirane
                 repairMicrowave();
+
+                globalBrightness += 0.4f;  // Povećaj osvetljenje za 10%
+                if (globalBrightness > 1.0f) globalBrightness = 1.0f; // Maksimalno osvetljenje 100%
+                std::cout << "Global brightness: " << globalBrightness << std::endl;
+
                 std::cout << "Microwave repaired!" << std::endl;
             }
             else if (key == GLFW_KEY_O) { 
@@ -127,6 +142,10 @@
             else if (key == GLFW_KEY_Z) {  // zatvara vrata
                 isDoorOpen = false;
                 std::cout << "Microwave door closed." << std::endl;
+            }
+            else if (key == GLFW_KEY_D) {  // Dugme `D` menja prozirnost
+                doorTransparency = (doorTransparency == 1.0f) ? 0.5f : 1.0f;  // Prebaci između 50% i 100%
+                std::cout << "Door transparency toggled to: " << doorTransparency << std::endl;
             }
         }
     }
@@ -147,10 +166,8 @@
         GLFWmonitor* monitor = glfwGetPrimaryMonitor();                 //trenutni monitor
         const GLFWvidmode* mode = glfwGetVideoMode(monitor);            //informacije o rezoluciji i osvežavanju
         GLFWwindow* window;
-        unsigned int wWidth = 1280; 
-        unsigned int wHeight = 720;
   
-        const char wTitle[] = "[Generic title]";
+        const char wTitle[] = "Microwave";
 
        // window = glfwCreateWindow(wWidth, wHeight, wTitle, glfwGetPrimaryMonitor(), NULL); //fullscreen
 
@@ -164,7 +181,11 @@
         }
 
         glfwMakeContextCurrent(window);                               // radim trenutno na prozoru - window
-        glfwSwapInterval(1); // Uključuje sinhronizaciju sa vertikalnim osvežavanjem monitora
+        glfwSwapInterval(1);                    // Uključuje sinhronizaciju sa vertikalnim osvežavanjem monitora
+
+        // Inicijalizacija miša
+        glfwSetMouseButtonCallback(window, mouse_button_callback);
+        glfwSetKeyCallback(window, key_callback);
 
         if (glewInit() != GLEW_OK)
         {
@@ -216,21 +237,33 @@
            -0.65f,   0.2f,    0.0f, 0.0f, 0.0f   // Gornji levi ugao
         };
 
-        float doorVertices[] = {
-          -0.18f,  -0.60f,   1.0f, 1.0f, 1.0f,   // Donji desni ugao
-          -0.18f,   0.13f, 1.0f, 1.0f, 1.0f,     // Gornji desni ugao
-          -0.60f,  -0.60f,  1.0f, 1.0f, 1.0f,    // Donji levi ugao
-          -0.60f,   0.13f,    1.0f, 1.0f, 1.0f   // Gornji levi ugao
+        float doorGlassVertices[] = {
+          -0.18f,  -0.60f,   0.5f, 0.7f, 1.0f,   // Donji desni ugao
+          -0.18f,   0.13f,  0.5f, 0.7f, 1.0f,     // Gornji desni ugao
+          -0.60f,  -0.60f,   0.5f, 0.7f, 1.0f,    // Donji levi ugao
+          -0.60f,   0.13f,    0.5f, 0.7f, 1.0f   // Gornji levi ugao
         };
-
 
         float microwaveInsideVertices[] = {
-          -0.18f,  -0.60f,   0.0f, 0.0f, 0.0f,      // Donji desni ugao
-          -0.18f,   0.13f,    0.0f, 0.0f, 0.0f,          // Gornji desni ugao
-          -0.60f,  -0.60f,   0.0f, 0.0f, 0.0f,     // Donji levi ugao
-          -0.60f,   0.13f,    0.0f, 0.0f, 0.0f        // Gornji levi ugao
+          -0.18f,  -0.60f,   1.0f, 1.0f, 1.0f,      // Donji desni ugao
+          -0.18f,   0.13f,    1.0f, 1.0f, 1.0f,          // Gornji desni ugao
+          -0.60f,  -0.60f,   1.0f, 1.0f, 1.0f,     // Donji levi ugao
+          -0.60f,   0.13f,   1.0f, 1.0f, 1.0f        // Gornji levi ugao
         };
 
+        float foodVertices[] = {
+         -0.2f,  -0.60f,   1.0f, 0.0f,      // Donji desni ugao
+         -0.2f,   -0.2f,   1.0f,  1.0f,          // Gornji desni ugao
+         -0.58f,  -0.60f,   0.0f, 0.0f,     // Donji levi ugao
+         -0.58f,   -0.2f,   0.0f, 1.0f        // Gornji levi ugao
+        };
+
+        float foodLampVertices[] = {
+        -0.35f,  0.1f,  1.0f, 1.0f, 0.5f,  // Donji desni ugao
+        -0.35f,  0.13f, 1.0f, 1.0f, 0.5f,  // Gornji desni ugao
+        -0.42f,  0.1f,  1.0f, 1.0f, 0.5f,  // Donji levi ugao
+        -0.42f,  0.13f, 1.0f, 1.0f, 0.5f   // Gornji levi ugao
+        };
 
         float lampVertices[]{
             0.12, 0.14,  0.0f, 0.0f, 0.0f,       //donji desni 
@@ -344,8 +377,6 @@
 
         }
 
-        unsigned int stride = 5 * sizeof(float);
-
         unsigned  counterTopVAO, counterTopVBO, counterTopEBO;
 
         glGenBuffers(1, &counterTopVBO);
@@ -353,8 +384,8 @@
         glGenVertexArrays(1, &counterTopVAO);       //  kreira objekte u memoriji GPU
 
         glBindVertexArray(counterTopVAO);           // trenutni objekat
-
         glBindBuffer(GL_ARRAY_BUFFER, counterTopVBO);
+
         glBufferData(GL_ARRAY_BUFFER, sizeof(counterTopVertices), counterTopVertices, GL_STATIC_DRAW);  // kopira iz RAM u GPU
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, counterTopEBO);
@@ -367,11 +398,30 @@
         glEnableVertexAttribArray(1);
 
 
+        unsigned  foodVAO, foodVBO, foodEBO;
+
+        glGenBuffers(1, &foodVBO);
+        glGenBuffers(1, &foodEBO);
+        glGenVertexArrays(1, &foodVAO);       //  kreira objekte u memoriji GPU
+
+        glBindVertexArray(foodVAO);           // trenutni objekat
+        glBindBuffer(GL_ARRAY_BUFFER, foodVBO);
+
+        glBufferData(GL_ARRAY_BUFFER, sizeof(foodVertices), foodVertices, GL_STATIC_DRAW);  // kopira iz RAM u GPU
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, foodEBO);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uniIndices), uniIndices, GL_STATIC_DRAW);
+
+        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(0);
+
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+        glEnableVertexAttribArray(1);
 
         unsigned int microwaveVAO, microwaveSideVAO, microwaveTopVAO,
-                     keyboardFrameVAO, timerVAO, keyboardVAO, startStopButtonVAO,
-                     restartButtonVAO, doorFrameVAO, doorVAO,pictureVAO, microwaveInsideVAO,
-                     lampVAO, lampLineVAO,smokeVAO;
+                     keyboardFrameVAO, timerVAO, keyboardVAO,buttonVAO, startStopButtonVAO,
+                     restartButtonVAO, doorFrameVAO, doorGlassVAO,pictureVAO, microwaveInsideVAO,
+                     lampVAO, lampLineVAO,smokeVAO, foodLampVAO;
 
         microwaveVAO = initVAO(microwaveVertices,uniIndices,sizeof(microwaveVertices),sizeof(uniIndices), 5 * sizeof(float));
         microwaveSideVAO =initVAO(microwaveSideVertices, uniIndices,sizeof(microwaveSideVertices), sizeof(uniIndices), 5 * sizeof(float));
@@ -382,14 +432,14 @@
         startStopButtonVAO = initVAO(startStopButtonVertices, uniIndices, sizeof(startStopButtonVertices), sizeof(uniIndices), 5 * sizeof(float));
         restartButtonVAO =  initVAO(restartButtonVertices, uniIndices, sizeof(restartButtonVertices), sizeof(uniIndices), 5 * sizeof(float));
         doorFrameVAO = initVAO(doorFrameVertices, uniIndices, sizeof(doorFrameVertices), sizeof(uniIndices), 5 * sizeof(float));
-        doorVAO = initVAO(doorVertices, uniIndices, sizeof(doorVertices), sizeof(uniIndices), 5 * sizeof(float));
+        doorGlassVAO = initVAO(doorGlassVertices, uniIndices, sizeof(doorGlassVertices), sizeof(uniIndices), 5 * sizeof(float));
         pictureVAO= initVAO(pictureVertices, uniIndices, sizeof(pictureVertices), sizeof(uniIndices), 5 * sizeof(float));
         microwaveInsideVAO = initVAO(microwaveInsideVertices, uniIndices, sizeof(microwaveInsideVertices), sizeof(uniIndices), 5 * sizeof(float));
         lampVAO = initVAO(lampVertices, uniIndices, sizeof(lampVertices), sizeof(uniIndices), 5 * sizeof(float));
         lampLineVAO = initVAO(lampLineVertices, uniIndices, sizeof(lampLineVertices), sizeof(uniIndices), 5 * sizeof(float));
         smokeVAO = initVAO(smokeVertices, uniIndices, sizeof(smokeVertices), sizeof(uniIndices), 5 * sizeof(float));
-
-        // TExt
+        foodLampVAO = initVAO(foodLampVertices, uniIndices, sizeof(foodLampVertices), sizeof(uniIndices), 5 * sizeof(float));
+     // TEXT
 
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -407,38 +457,37 @@
 
             loadFont("ARIAL.TTF");
 
-            // Inicijalizacija miša
-            glfwSetMouseButtonCallback(window, mouse_button_callback);
-
-            glfwSetKeyCallback(window, key_callback);
-
-
-
-    // TEXTURE 
-
-        unsigned int texture;
+    // TEXTURE
+        unsigned int texture, foodTexture;
         glGenTextures(1, &texture);
         glBindTexture(GL_TEXTURE_2D, texture);
 
-        // Postavljanje opcija za teksturu
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
         int width, height, nrChannels;
         unsigned char* data = stbi_load("Textures/wood-texture.jpg",  &width, &height, &nrChannels, 0);
-        std::cout << "Ucitavanje teksture uspesno: " << width << "x" << height << ", kanali: " << nrChannels << std::endl;
 
         if (data) {
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
             glGenerateMipmap(GL_TEXTURE_2D);
-            std::cout << "Uspesno ucitana tekstura: " << width << "x" << height << ", kanali: " << nrChannels << std::endl;
             stbi_image_free(data);
         }
         else {
             std::cout << "Greska pri ucitavanju teksture!" << std::endl;
         }
+
+        glGenTextures(1, &foodTexture);
+        glBindTexture(GL_TEXTURE_2D, foodTexture);
+        stbi_set_flip_vertically_on_load(true);
+        unsigned char* data2 = stbi_load("Textures/food.jpg", &width, &height, &nrChannels, 0);
+
+        if (data2) {
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data2);
+            glGenerateMipmap(GL_TEXTURE_2D);
+            stbi_image_free(data2);
+        }
+        else {
+            std::cout << "Greska pri ucitavanju teksture!" << std::endl;
+        }
+
 
         unsigned int basicShader = createShader("basic.vert", "basic.frag");
         unsigned int textShader = createShader("text.vert", "text.frag");
@@ -450,10 +499,6 @@
         glUniformMatrix4fv(glGetUniformLocation(textShader, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
 
         glClearColor(0.960784, 0.960784, 0.862745, 1.0);
-
-        int minutes = 2, seconds = 30;
-        double lastTime = glfwGetTime();
-
 
         while (!glfwWindowShouldClose(window))
         {
@@ -478,27 +523,50 @@
             unsigned int modelLoc = glGetUniformLocation(basicShader, "model");
             glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 
-            // Postavi uniform vrednosti za zatamnjenje
-            glUniform1f(glGetUniformLocation(basicShader, "brightness"), sceneBrightness); // Globalna osvetljenost
+       
+            // Postavi uniform vrednost za globalno osvetljenje
+            glUniform1f(glGetUniformLocation(basicShader, "globalBrightness"), globalBrightness);
+
             glUniform1i(glGetUniformLocation(basicShader, "isDoor"), 0);  // Ostali objekti
 
-            // Use ourTexture uniform for texture binding
-            glActiveTexture(GL_TEXTURE0); // Activate texture unit 0
-            glBindTexture(GL_TEXTURE_2D, texture); // Bind the texture
+
+           //textura
+            glActiveTexture(GL_TEXTURE0);                   // Activate texture unit 0
+            glBindTexture(GL_TEXTURE_2D, texture);         // Bind the texture
             glUniform1i(glGetUniformLocation(basicShader, "ourTexture"), 0); // Texture unit 0
 
-
-            // Iscrtavanje CounterTop (tekstura)
             glUniform1i(glGetUniformLocation(basicShader, "useTexture"), 0);
-            glBindTexture(GL_TEXTURE_2D, texture);
-
             glBindVertexArray(counterTopVAO);
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
             // Iscrtavanje prednjeg dela mikrotalasne, boja
-            glUniform1i(glGetUniformLocation(basicShader, "useTexture"), 1);
+            glUniform1i(glGetUniformLocation(basicShader, "useTexture"), 2);
             glBindVertexArray(microwaveVAO);
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+            glBindVertexArray(microwaveInsideVAO);
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+            glUseProgram(lampShader);
+            // Food lamp
+            glUniform1i(glGetUniformLocation(lampShader, "isFoodLamp"), 1);  // Ovo je food lamp
+           // glUniform3f(glGetUniformLocation(lampShader, "lampColor"), 1.0f, 1.0f, 0.6f); // Žuta boja za food lamp
+            glUniform1f(glGetUniformLocation(lampShader, "pulseFactor2"), lampFoodPulse); // Nema pulsiranja za food lamp
+
+            glBindVertexArray(foodLampVAO);
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+            glUseProgram(basicShader);
+
+            glActiveTexture(GL_TEXTURE1);                                    // Aktiviraj teksturnu jedinicu 1
+            glBindTexture(GL_TEXTURE_2D, foodTexture);                       // druga tekstura
+            glUniform1i(glGetUniformLocation(basicShader, "ourTexture2"), 1); // Poveži teksturu sa uniformom
+
+            glUniform1i(glGetUniformLocation(basicShader, "useTexture"), 1); // Izaberi teksturu `food.jpg`
+            glBindVertexArray(foodVAO); // VAO za objekat sa teksturom
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+            glUniform1i(glGetUniformLocation(basicShader, "useTexture"), 2);
 
             glBindVertexArray(microwaveSideVAO);
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
@@ -513,11 +581,25 @@
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
             glUseProgram(lampShader); // Aktiviraj shader za lampicu
+
+            glUniform1i(glGetUniformLocation(lampShader, "isFoodLamp"), 0);  
+
             glUniform3f(glGetUniformLocation(lampShader, "lampColor"), 1.0f, 1.0f, 1.0f); // Crvena boja
             glUniform1f(glGetUniformLocation(lampShader, "pulseFactor"), lampPulse); // Pulsiranje
 
             glBindVertexArray(lampLineVAO);
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+           
+            glm::vec3 lightYellow = glm::vec3(1.0f, 1.0f, 0.6f);
+            float brightness1 = isRunning ? (0.5f + 0.5f * sin(glfwGetTime() * 2.0f)) : 0.0f;
+
+            glUniform3f(glGetUniformLocation(lampShader, "lampColor"), lightYellow.x, lightYellow.y, lightYellow.z);
+            glUniform1f(glGetUniformLocation(lampShader, "brightness"), brightness1);
+
+            glBindVertexArray(foodLampVAO);
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+            glBindVertexArray(0);
 
             glUseProgram(basicShader);  
             glBindVertexArray(timerVAO);
@@ -540,7 +622,7 @@
                 glm::mat4 translationToAxis = glm::translate(glm::mat4(1.0f), glm::vec3(0.65f, 0.0f, 0.0f)); // Pomeri prema X=0
 
                 // Rotacija vrata oko Y-ose
-                float openAngle = 65.0f; // Ugao otvaranja
+                float openAngle = 90.0f; // Ugao otvaranja
                 glm::mat4 rotation = glm::rotate(glm::mat4(1.0f), glm::radians(openAngle), glm::vec3(0.0f, 1.0f, 0.0f));
 
                 // Vraćanje nazad na originalnu osu
@@ -555,21 +637,30 @@
             glUniformMatrix4fv(doorModelLoc, 1, GL_FALSE, glm::value_ptr(doorModel));
   
             glUniform1i(glGetUniformLocation(basicShader, "isDoor"), 1); //uniforma za sejder da zna sta crtamo
-            // crtanje vrata
+          
+            glUniform1i(glGetUniformLocation(basicShader, "isGlass"), 1); // Poluprovidn
+            glUniform1i(glGetUniformLocation(basicShader, "isGlass1"), 0); // Poluprovidno
+
             glBindVertexArray(doorFrameVAO);
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-            glUniform1i(glGetUniformLocation(basicShader, "isDoor"), 0);
 
+            // iscrtavanje stakla (poluprovidno)
+            glUniform1i(glGetUniformLocation(basicShader, "isGlass"), 1); // Poluprovidno
+            glUniform1i(glGetUniformLocation(basicShader, "isGlass1"), 1); // Poluprovidno
+
+            glUniform1f(glGetUniformLocation(basicShader, "transparency"), doorTransparency);
+            glBindVertexArray(doorGlassVAO);
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+            glUniform1i(glGetUniformLocation(basicShader, "isDoor"), 0);
+            glUniform1i(glGetUniformLocation(basicShader, "isGlass"), 0); // Poluprovidno
 
             glBindVertexArray(pictureVAO);
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
-            glUseProgram(textShader);
-
+            
             // Iscrtavanje teksta tajmera
+            glUseProgram(textShader);       
             glBindVertexArray(textVAO);
-            glEnable(GL_BLEND);
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             RenderText(textShader, curentTime,-0.08, 0.02, 0.0015, glm::vec3(0.0f, 0.0f, 0.0f), textVAO, textVBO);
 
 
@@ -791,7 +882,7 @@
         lampPulse = 1.0f;                                   
         minutes = 0;
         seconds = 0;
-        curentTime = "00:00";
+        curentTime = "    :";
         sceneBrightness = 1.0f;                                 // reset osvetljenja na početnu vrednost
         smokeCenter = smokeStart;                            
         isSmokeVisible = false;                                 // Dim postaje nevidljiv
@@ -859,7 +950,7 @@
             return;
         }
 
-        FT_Face face;
+        FT_Face face;                                   // velicina karaktera ..
         if (FT_New_Face(ft, fontPath, 0, &face)) {
             std::cout << "ERROR::FREETYPE: Failed to load font" << std::endl;
             return;
@@ -889,7 +980,7 @@
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-            Character character = {
+            Character character = {                                    // Skladišti informacije o teksturi, dimenzijama, pozicioniranju i razmaku.
                 texture,
                 glm::ivec2(face->glyph->bitmap.width, face->glyph->bitmap.rows),
                 glm::ivec2(face->glyph->bitmap_left, face->glyph->bitmap_top),
@@ -912,7 +1003,7 @@
         for (char c : text) {
             Character ch = Characters[c];
 
-            float xpos = x + ch.Bearing.x * scale;
+            float xpos = x + ch.Bearing.x * scale;          
             float ypos = y - (ch.Size.y - ch.Bearing.y) * scale;
 
             float w = ch.Size.x * scale;
@@ -933,7 +1024,7 @@
             glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
             glDrawArrays(GL_TRIANGLES, 0, 6);
 
-            x += (ch.Advance >> 6) * scale;
+            x += (ch.Advance >> 6) * scale;     //pomera kursor za sirinu trenurnog
         }
 
         glBindVertexArray(0);
